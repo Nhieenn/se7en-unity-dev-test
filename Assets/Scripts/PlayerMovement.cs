@@ -71,7 +71,6 @@ public class PlayerMovement : MonoBehaviour
         characterController.Move(finalMove);
 
         // 4. Update Animator parameter (Blend: 0 = Idle, >0 = Walk/Run)
-        // In AnimatorController_Jamo: 0 is Idle, 0.25 is Walk, 0.6 is Run
         if (animator != null)
         {
             float targetBlend = inputDirection.sqrMagnitude > 0.001f ? 0.6f : 0f;
