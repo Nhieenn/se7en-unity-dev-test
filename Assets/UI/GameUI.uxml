@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/GameUI.uss" />
+    <ui:VisualElement class="game-ui-container" picking-mode="Ignore">
+        <!-- Top Row: Reset Button -->
+        <ui:VisualElement class="top-bar" picking-mode="Ignore">
+            <ui:Button name="ResetButton" text="Reset" class="custom-btn action-btn" />
+        </ui:VisualElement>
+
+        <!-- Bottom Row: Auto Kick & Kick Button -->
+        <ui:VisualElement class="bottom-bar" picking-mode="Ignore">
+            <ui:Button name="AutoKickButton" text="Auto Kick" class="custom-btn action-btn" />
+            <ui:Button name="KickButton" text="Kick" class="custom-btn kick-btn" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

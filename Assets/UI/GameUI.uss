@@ -1,0 +1,61 @@
+.game-ui-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    justify-content: space-between;
+    padding: 24px;
+}
+
+.top-bar {
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+.bottom-bar {
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: flex-end;
+}
+
+/* Base style for square rounded buttons: White background, black text, subtle rounded corners */
+.custom-btn {
+    background-color: #FFFFFF;
+    color: #111111;
+    font-size: 16px;
+    -unity-font-style: bold;
+    border-radius: 10px;
+    border-width: 0px;
+    padding: 12px 18px;
+    margin: 8px;
+    cursor: link;
+    transition-property: background-color, scale;
+    transition-duration: 0.15s;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Hover and active states */
+.custom-btn:hover {
+    background-color: #E8E8E8;
+    scale: 1.05 1.05;
+}
+
+.custom-btn:active {
+    background-color: #D0D0D0;
+    scale: 0.95 0.95;
+}
+
+/* Square rounded Kick Button */
+.kick-btn {
+    width: 80px;
+    height: 80px;
+    font-size: 20px;
+    border-radius: 14px;
+    margin-bottom: 12px;
+}
+
+/* Reset and Auto-Kick button styles */
+.action-btn {
+    min-width: 110px;
+    height: 48px;
+}
