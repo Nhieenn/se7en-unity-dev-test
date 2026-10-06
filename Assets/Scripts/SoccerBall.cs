@@ -4,7 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// Represents an individual soccer ball with flight physics/animation towards a target goal,
-/// particle triggering on arrival, and camera follow support.
+/// particle triggering on arrival, and triggers events via EventBus.
 /// </summary>
 public class SoccerBall : MonoBehaviour
 {
@@ -21,8 +21,6 @@ public class SoccerBall : MonoBehaviour
 
     private Rigidbody rb;
     private Collider ballCollider;
-
-    public event Action<SoccerBall> OnGoalReached;
 
     private void Awake()
     {
@@ -67,11 +65,8 @@ public class SoccerBall : MonoBehaviour
             rb.velocity = Vector3.zero;
         }
 
-        // Trigger camera to follow this ball, and return to player after flight + 2 seconds
-        if (CameraController.Instance != null)
-        {
-            CameraController.Instance.SetTarget(transform, flightDuration + 2.0f);
-        }
+        // Trigger EventBus event
+        EventBus.TriggerBallKicked(this);
 
         StartCoroutine(FlyToGoalRoutine(targetGoal.TargetPosition));
     }
@@ -105,28 +100,45 @@ public class SoccerBall : MonoBehaviour
 
         transform.position = targetGoalPos;
 
-        // Spawn Confetti Particle Explosion
+        // Spawn Confetti Particle Explosion via ObjectPool
         PlayGoalEffects(targetGoalPos);
 
-        OnGoalReached?.Invoke(this);
+        // Notify systems (Player celebrates, Camera resets, etc.)
+        EventBus.TriggerBallScored(this, targetGoalPos);
     }
 
     private void PlayGoalEffects(Vector3 effectPosition)
     {
+        if (ObjectPool.Instance != null)
+        {
+            ObjectPool.Instance.SpawnConfetti(effectPosition, 4f);
+            return;
+        }
+
+        // Fallback if ObjectPool is not present in scene
+        GameObject effectObj = null;
         if (confettiPrefab != null)
         {
-            GameObject effect = Instantiate(confettiPrefab, effectPosition, Quaternion.identity);
-            Destroy(effect, 4f); // Auto cleanup after particle plays
+            effectObj = Instantiate(confettiPrefab, effectPosition, Quaternion.identity);
         }
         else
         {
-            // Try loading from Resources if not assigned in Inspector
             GameObject loadedPrefab = Resources.Load<GameObject>("Confetti Explosion - Stars");
             if (loadedPrefab != null)
             {
-                GameObject effect = Instantiate(loadedPrefab, effectPosition, Quaternion.identity);
-                Destroy(effect, 4f);
+                effectObj = Instantiate(loadedPrefab, effectPosition, Quaternion.identity);
             }
+        }
+
+        if (effectObj != null)
+        {
+            ParticleSystem[] particles = effectObj.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < particles.Length; i++)
+            {
+                particles[i].Play(true);
+            }
+
+            Destroy(effectObj, 4f);
         }
     }
 }

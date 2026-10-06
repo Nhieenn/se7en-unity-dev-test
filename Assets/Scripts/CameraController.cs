@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// Controls the Top-Down camera following the Player or a Soccer Ball smoothly.
-/// Supports temporary target switching (e.g. following the kicked ball, then returning to Player).
+/// Listens to EventBus for ball kicks and scored events to automatically track targets.
 /// </summary>
 public class CameraController : MonoBehaviour
 {
@@ -43,11 +43,22 @@ public class CameraController : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        EventBus.OnBallKicked += HandleBallKicked;
+        EventBus.OnBallScored += HandleBallScored;
+    }
+
+    private void OnDisable()
+    {
+        EventBus.OnBallKicked -= HandleBallKicked;
+        EventBus.OnBallScored -= HandleBallScored;
+    }
+
     private void Start()
     {
         if (defaultTarget == null)
         {
-            // Try finding the player if not set in Inspector
             PlayerMovement player = FindObjectOfType<PlayerMovement>();
             if (player != null)
             {
@@ -67,10 +78,8 @@ public class CameraController : MonoBehaviour
     {
         if (currentTarget == null) return;
 
-        // Calculate desired position based on target position + offset
         Vector3 desiredPosition = currentTarget.position + offset;
 
-        // Smooth position movement
         if (useSmoothDamp)
         {
             transform.position = Vector3.SmoothDamp(transform.position, desiredPosition, ref currentVelocity, smoothTime);
@@ -80,18 +89,32 @@ public class CameraController : MonoBehaviour
             transform.position = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.deltaTime);
         }
 
-        // Keep the top-down viewing angle
         if (lockRotation)
         {
             transform.rotation = Quaternion.Euler(fixedEulerRotation);
         }
     }
 
-    /// <summary>
-    /// Switch camera target temporarily to a new object (e.g. ball) and return to player after a delay.
-    /// </summary>
-    /// <param name="newTarget">Transform of the object to follow (e.g. soccer ball)</param>
-    /// <param name="delayBeforeReturn">Delay in seconds after which target returns to defaultTarget (Player)</param>
+    private void HandleBallKicked(SoccerBall ball)
+    {
+        if (returnRoutine != null)
+        {
+            StopCoroutine(returnRoutine);
+            returnRoutine = null;
+        }
+        currentTarget = ball.transform;
+    }
+
+    private void HandleBallScored(SoccerBall ball, Vector3 goalPos)
+    {
+        // Wait 2 seconds at the goal, then return to player
+        if (returnRoutine != null)
+        {
+            StopCoroutine(returnRoutine);
+        }
+        returnRoutine = StartCoroutine(ReturnToDefaultTargetRoutine(2.0f));
+    }
+
     public void SetTarget(Transform newTarget, float delayBeforeReturn = 0f)
     {
         if (returnRoutine != null)
@@ -108,9 +131,6 @@ public class CameraController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Instantly return camera target to Player.
-    /// </summary>
     public void ResetToDefaultTarget()
     {
         if (returnRoutine != null)
