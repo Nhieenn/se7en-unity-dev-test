@@ -4,6 +4,7 @@ using UnityEngine;
 /// <summary>
 /// Manages all soccer balls in the scene.
 /// Calculates closest ball and farthest ball relative to Player for Kick and Auto-Kick actions.
+/// Locks kicking actions while a ball is currently in flight or during goal celebration.
 /// </summary>
 public class BallManager : MonoBehaviour
 {
@@ -19,7 +20,8 @@ public class BallManager : MonoBehaviour
     private static readonly List<SoccerBall> allBalls = new List<SoccerBall>();
 
     public SoccerBall ClosestBallToPlayer { get; private set; }
-    public bool IsPlayerNearAnyBall => ClosestBallToPlayer != null;
+    public bool IsKickingInProgress { get; private set; } = false;
+    public bool IsPlayerNearAnyBall => ClosestBallToPlayer != null && !IsKickingInProgress;
 
     private void Awake()
     {
@@ -32,6 +34,18 @@ public class BallManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+    }
+
+    private void OnEnable()
+    {
+        EventBus.OnBallKicked += HandleBallKicked;
+        EventBus.OnKickSequenceCompleted += HandleKickCompleted;
+    }
+
+    private void OnDisable()
+    {
+        EventBus.OnBallKicked -= HandleBallKicked;
+        EventBus.OnKickSequenceCompleted -= HandleKickCompleted;
     }
 
     private void Start()
@@ -51,6 +65,16 @@ public class BallManager : MonoBehaviour
         UpdateClosestBall();
     }
 
+    private void HandleBallKicked(SoccerBall ball)
+    {
+        IsKickingInProgress = true;
+    }
+
+    private void HandleKickCompleted()
+    {
+        IsKickingInProgress = false;
+    }
+
     public static void RegisterBall(SoccerBall ball)
     {
         if (!allBalls.Contains(ball))
@@ -66,7 +90,11 @@ public class BallManager : MonoBehaviour
 
     private void UpdateClosestBall()
     {
-        if (playerTransform == null) return;
+        if (playerTransform == null || IsKickingInProgress)
+        {
+            ClosestBallToPlayer = null;
+            return;
+        }
 
         SoccerBall nearest = null;
         float minSqrDistance = kickInteractionDistance * kickInteractionDistance;
@@ -93,6 +121,8 @@ public class BallManager : MonoBehaviour
     /// </summary>
     public void KickNearestBall()
     {
+        if (IsKickingInProgress) return;
+
         if (ClosestBallToPlayer != null && !ClosestBallToPlayer.IsKicked)
         {
             ClosestBallToPlayer.KickToGoal();
@@ -105,7 +135,7 @@ public class BallManager : MonoBehaviour
     /// </summary>
     public void KickFarthestBall()
     {
-        if (playerTransform == null || allBalls.Count == 0) return;
+        if (IsKickingInProgress || playerTransform == null || allBalls.Count == 0) return;
 
         SoccerBall farthest = null;
         float maxSqrDistance = -1f;

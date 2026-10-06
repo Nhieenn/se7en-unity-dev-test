@@ -2,8 +2,9 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// State Machine for Player States (Idle, Moving, Happy Celebration).
+/// State Machine for Player States (Idle, Moving, HappyCelebration).
 /// Listens to EventBus for Goal Scored events to trigger celebration animation.
+/// While in Celebration state, player input is locked and animation is forced to Happy.
 /// </summary>
 public enum PlayerStateType
 {
@@ -115,7 +116,13 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleCelebrationState()
     {
-        // When celebrating, player stops moving and plays happy animation
+        // Force Blend to 0 so the Happy Blend Tree plays Idle_Happy animation instead of running
+        if (animator != null)
+        {
+            animator.SetFloat(blendHash, 0f);
+        }
+
+        // Apply only downward gravity to keep player grounded, ignoring any WASD input keys
         ApplyGravityAndMove(Vector3.zero);
     }
 
@@ -153,7 +160,10 @@ public class PlayerMovement : MonoBehaviour
 
         if (animator != null)
         {
+            // Reset any conflicting triggers and set happy
+            animator.ResetTrigger(normalHash);
             animator.SetTrigger(happyHash);
+            animator.SetFloat(blendHash, 0f); // Ensure it triggers Idle Happy (Blend=0)
         }
 
         yield return new WaitForSeconds(celebrationDuration);
@@ -161,10 +171,14 @@ public class PlayerMovement : MonoBehaviour
         // Return to Normal State
         if (animator != null)
         {
+            animator.ResetTrigger(happyHash);
             animator.SetTrigger(normalHash);
         }
 
         CurrentState = PlayerStateType.Idle;
         celebrationRoutine = null;
+
+        // Unlock kick actions
+        EventBus.TriggerKickSequenceCompleted();
     }
 }

@@ -70,8 +70,10 @@ public class UIManager : MonoBehaviour
 
     private void Update()
     {
+        if (BallManager.Instance == null) return;
+
         // Toggle Kick Button visibility in UI Toolkit based on proximity to any ball
-        if (kickButton != null && BallManager.Instance != null)
+        if (kickButton != null)
         {
             bool shouldShowKick = BallManager.Instance.IsPlayerNearAnyBall;
             DisplayStyle targetDisplay = shouldShowKick ? DisplayStyle.Flex : DisplayStyle.None;
@@ -80,6 +82,12 @@ public class UIManager : MonoBehaviour
             {
                 kickButton.style.display = targetDisplay;
             }
+        }
+
+        // Disable Auto-Kick button while a kick is already in progress
+        if (autoKickButton != null)
+        {
+            autoKickButton.SetEnabled(!BallManager.Instance.IsKickingInProgress);
         }
     }
 
